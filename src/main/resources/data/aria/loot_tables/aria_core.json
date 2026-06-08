@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:item",
+  "name": "item.aria.aria_core",
+  "rolls": 1.0,
+  "entries": [
+    {
+      "type": "minecraft:item",
+      "name": "aria:aria_core"
+    }
+  ]
+}
