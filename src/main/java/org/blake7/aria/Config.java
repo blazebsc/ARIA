@@ -18,12 +18,13 @@ public class Config {
         public final ModConfigSpec.IntValue unpromptedIntervalStage2;
         public final ModConfigSpec.IntValue unpromptedIntervalStage3;
         public final ModConfigSpec.BooleanValue enableTts;
+        public final ModConfigSpec.BooleanValue enableMicrophone;
         public final ModConfigSpec.BooleanValue enableHorrorEffects;
 
         public Common(ModConfigSpec.Builder builder) {
             builder.push("audio");
             whisperPort = builder.comment("Port for Faster Whisper STT server")
-                    .defineInRange("whisperPort", 8080, 1, 65535);
+                    .defineInRange("whisperPort", 8181, 1, 65535);
             ollamaPort = builder.comment("Port for Ollama LLM server")
                     .defineInRange("ollamaPort", 11434, 1, 65535);
             f5TtsPort = builder.comment("Port for F5-TTS server")
@@ -34,6 +35,8 @@ public class Config {
                     .defineInRange("silenceTimeoutMs", 1500, 100, 10000);
             enableTts = builder.comment("Enable F5-TTS voice synthesis")
                     .define("enableTts", true);
+            enableMicrophone = builder.comment("Enable microphone input for voice chat")
+                    .define("enableMicrophone", false);
             builder.pop();
 
             builder.push("stages");
@@ -61,6 +64,7 @@ public class Config {
     public static class Client {
         public final ModConfigSpec.BooleanValue showSubtitles;
         public final ModConfigSpec.DoubleValue volumeMultiplier;
+        public final ModConfigSpec.DoubleValue ttsSpeed;
         public final ModConfigSpec.BooleanValue enableTextChat;
         public final ModConfigSpec.IntValue textChatColor;
 
@@ -70,6 +74,8 @@ public class Config {
                     .define("showSubtitles", true);
             volumeMultiplier = builder.comment("Volume multiplier for Aria's voice (0.0-2.0)")
                     .defineInRange("volumeMultiplier", 1.0, 0.0, 2.0);
+            ttsSpeed = builder.comment("Speech speed multiplier for Aria's voice (0.5-3.0)")
+                    .defineInRange("ttsSpeed", 2.0, 0.5, 3.0);
             builder.pop();
 
             builder.push("textChat");

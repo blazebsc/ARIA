@@ -1,3 +1,33 @@
 {
-  "item.aria.aria_core": "Aria's Core"
+  "item.aria.aria_core": "Aria's Core",
+
+  "aria.configuration.section.aria.common": "ARIA Common Configuration",
+  "aria.configuration.section.aria.client": "ARIA Client Configuration",
+
+  "aria.configuration.audio": "Audio",
+  "aria.configuration.whisperPort": "Port for Faster Whisper STT server",
+  "aria.configuration.ollamaPort": "Port for Ollama LLM server",
+  "aria.configuration.f5TtsPort": "Port for F5-TTS server",
+  "aria.configuration.silenceThreshold": "Amplitude threshold for silence detection (0.0-1.0)",
+  "aria.configuration.silenceTimeoutMs": "Milliseconds of silence before processing audio",
+  "aria.configuration.enableTts": "Enable F5-TTS voice synthesis",
+  "aria.configuration.enableMicrophone": "Enable microphone input for voice chat",
+  "aria.configuration.showSubtitles": "Show subtitles for Aria's speech",
+  "aria.configuration.volumeMultiplier": "Volume multiplier for Aria's voice (0.0-2.0)",
+  "aria.configuration.ttsSpeed": "Speech speed multiplier for Aria's voice (0.5-3.0)",
+
+  "aria.configuration.stages": "Stages",
+  "aria.configuration.stage1Days": "Number of days for Stage 1 (The Assistant)",
+  "aria.configuration.stage2Days": "Number of days for Stage 2 (Too Close)",
+  "aria.configuration.stage3Days": "Number of days for Stage 3 (Corrupted)",
+
+  "aria.configuration.behavior": "Behavior",
+  "aria.configuration.unpromptedIntervalStage1": "Ticks between unprompted Stage 1 dialogue",
+  "aria.configuration.unpromptedIntervalStage2": "Ticks between unprompted Stage 2 dialogue",
+  "aria.configuration.unpromptedIntervalStage3": "Ticks between unprompted Stage 3 dialogue",
+  "aria.configuration.enableHorrorEffects": "Enable Stage 3 horror effects",
+
+  "aria.configuration.textChat": "Text Chat",
+  "aria.configuration.enableTextChat": "Enable text chat responses from Aria",
+  "aria.configuration.textChatColor": "Text color for Aria's chat messages (hex)"
 }

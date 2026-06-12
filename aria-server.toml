@@ -1,0 +1,35 @@
+#Aria Server Configuration
+
+[audio]
+  #Port for Faster Whisper STT server
+  whisperPort = 8181
+  #Port for Ollama LLM server
+  ollamaPort = 11434
+  #Port for F5-TTS server
+  f5TtsPort = 8080
+  #Amplitude threshold for silence detection (0.0-1.0)
+  silenceThreshold = 0.01
+  #Milliseconds of silence before processing audio
+  silenceTimeoutMs = 1500
+  #Enable F5-TTS voice synthesis
+  enableTts = true
+  #Enable microphone input for voice chat
+  enableMicrophone = false
+
+[stages]
+  #Number of days for Stage 1 (The Assistant)
+  stage1Days = 3
+  #Number of days for Stage 2 (Too Close)
+  stage2Days = 4
+  #Number of days for Stage 3 (Corrupted)
+  stage3Days = 8
+
+[behavior]
+  #Ticks between unprompted Stage 1 dialogue
+  unpromptedIntervalStage1 = 12000
+  #Ticks between unprompted Stage 2 dialogue
+  unpromptedIntervalStage2 = 6000
+  #Ticks between unprompted Stage 3 dialogue
+  unpromptedIntervalStage3 = 3000
+  #Enable Stage 3 horror effects
+  enableHorrorEffects = true

@@ -24,6 +24,7 @@ public class AriaFollowGoal extends Goal {
 
     @Override
     public boolean canUse() {
+        if (aria.isPassenger()) return false;
         Player nearest = aria.level().getNearestPlayer(aria, startDistance);
         if (nearest == null) return false;
         this.targetPlayer = nearest;
@@ -32,7 +33,7 @@ public class AriaFollowGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        return targetPlayer != null && targetPlayer.isAlive() && aria.distanceTo(targetPlayer) > stopDistance;
+        return !aria.isPassenger() && targetPlayer != null && targetPlayer.isAlive() && aria.distanceTo(targetPlayer) > stopDistance;
     }
 
     @Override

@@ -27,45 +27,51 @@ public class AriaDataComponents {
             int stage,
             int dayActivated,
             List<String> conversationHistory,
-            String ownerName
+            String ownerName,
+            int faceState
     ) {
         public static final Codec<AriaCoreData> CODEC = Codec.STRING.comapFlatMap(
                 s -> {
                     try {
-                        String[] parts = s.split("\\|", 4);
+                        String[] parts = s.split("\\|", 6);
                         int stage = parts.length > 0 ? Integer.parseInt(parts[0]) : 1;
                         int day = parts.length > 1 ? Integer.parseInt(parts[1]) : 0;
                         List<String> history = parts.length > 2 && !parts[2].isEmpty()
                                 ? List.of(parts[2].split("\n"))
                                 : new ArrayList<>();
                         String owner = parts.length > 3 ? parts[3] : "";
-                        return DataResult.success(new AriaCoreData(stage, day, new ArrayList<>(history), owner));
+                        int face = parts.length > 4 ? Integer.parseInt(parts[4]) : 0;
+                        return DataResult.success(new AriaCoreData(stage, day, new ArrayList<>(history), owner, face));
                     } catch (Exception e) {
                         return DataResult.error(() -> "Invalid AriaCoreData: " + e.getMessage());
                     }
                 },
                 data -> {
                     String historyStr = String.join("\n", data.conversationHistory());
-                    return data.stage() + "|" + data.dayActivated() + "|" + historyStr + "|" + data.ownerName();
+                    return data.stage() + "|" + data.dayActivated() + "|" + historyStr + "|" + data.ownerName() + "|" + data.faceState();
                 }
         );
 
-        public static final AriaCoreData DEFAULT = new AriaCoreData(1, 0, new ArrayList<>(), "");
+        public static final AriaCoreData DEFAULT = new AriaCoreData(1, 0, new ArrayList<>(), "", 0);
 
         public AriaCoreData withStage(int newStage) {
-            return new AriaCoreData(newStage, dayActivated, new ArrayList<>(conversationHistory), ownerName);
+            return new AriaCoreData(newStage, dayActivated, new ArrayList<>(conversationHistory), ownerName, faceState);
         }
 
         public AriaCoreData withDay(int day) {
-            return new AriaCoreData(stage, day, new ArrayList<>(conversationHistory), ownerName);
+            return new AriaCoreData(stage, day, new ArrayList<>(conversationHistory), ownerName, faceState);
         }
 
         public AriaCoreData withHistory(List<String> history) {
-            return new AriaCoreData(stage, dayActivated, new ArrayList<>(history), ownerName);
+            return new AriaCoreData(stage, dayActivated, new ArrayList<>(history), ownerName, faceState);
         }
 
         public AriaCoreData withOwner(String name) {
-            return new AriaCoreData(stage, dayActivated, new ArrayList<>(conversationHistory), name);
+            return new AriaCoreData(stage, dayActivated, new ArrayList<>(conversationHistory), name, faceState);
+        }
+
+        public AriaCoreData withFace(int newFace) {
+            return new AriaCoreData(stage, dayActivated, new ArrayList<>(conversationHistory), ownerName, newFace);
         }
     }
 }

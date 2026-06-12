@@ -17,5 +17,14 @@ out/
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
+# Python cache
+__pycache__/
+*.py[cod]
+
 # Common working directory
 run
+
+# ARIA local runtime output
+.aria_logs/
+tts_output/
+F5-TTS

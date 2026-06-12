@@ -3,33 +3,44 @@ package org.blake7.aria.client.renderer;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
+import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
+import org.blake7.aria.Aria;
 import org.blake7.aria.client.AriaClientEvents;
 import org.blake7.aria.client.model.AriaFaceState;
 import org.blake7.aria.entity.AriaEntity;
 import org.joml.Matrix4f;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 public class AriaRenderer extends EntityRenderer<AriaEntity> {
 
-    private static final ResourceLocation TEXTURE =
-            ResourceLocation.fromNamespaceAndPath("aria", "textures/entity/aria.png");
+    private static final ResourceLocation BODY_TEXTURE =
+            ResourceLocation.fromNamespaceAndPath(Aria.MODID, "textures/entity/aria.png");
 
-    private static final int LONGITUDE_SEGMENTS = 16;
-    private static final int LATITUDE_SEGMENTS = 12;
-    private static final float RADIUS = 0.3F;
+    private static final Map<AriaFaceState, ResourceLocation> FACE_TEXTURES = new EnumMap<>(AriaFaceState.class);
 
+    static {
+        FACE_TEXTURES.put(AriaFaceState.IDLE, ResourceLocation.fromNamespaceAndPath(Aria.MODID, "textures/entity/aria_idle.png"));
+        FACE_TEXTURES.put(AriaFaceState.EXCITED, ResourceLocation.fromNamespaceAndPath(Aria.MODID, "textures/entity/aria_excited.png"));
+        FACE_TEXTURES.put(AriaFaceState.THINKING, ResourceLocation.fromNamespaceAndPath(Aria.MODID, "textures/entity/aria_thinking.png"));
+        FACE_TEXTURES.put(AriaFaceState.LISTENING, ResourceLocation.fromNamespaceAndPath(Aria.MODID, "textures/entity/aria_listening.png"));
+        FACE_TEXTURES.put(AriaFaceState.UNSETTLING, ResourceLocation.fromNamespaceAndPath(Aria.MODID, "textures/entity/aria_unsettling.png"));
+        FACE_TEXTURES.put(AriaFaceState.NO_MOUTH, ResourceLocation.fromNamespaceAndPath(Aria.MODID, "textures/entity/aria_no_mouth.png"));
+        FACE_TEXTURES.put(AriaFaceState.STARING, ResourceLocation.fromNamespaceAndPath(Aria.MODID, "textures/entity/aria_staring.png"));
+        FACE_TEXTURES.put(AriaFaceState.DISTURBING, ResourceLocation.fromNamespaceAndPath(Aria.MODID, "textures/entity/aria_disturbing.png"));
+    }
+
+    private static final float SPHERE_RADIUS = 0.3F;
     private static final int FULL_BRIGHT = (15 << 20) | (15 << 4);
-
-    private static final int FACE_R = 20;
-    private static final int FACE_G = 20;
-    private static final int FACE_B = 20;
-
     private static final float FACE_TRANSITION_SPEED = 0.15F;
 
     private AriaFaceState displayFace = AriaFaceState.IDLE;
@@ -44,8 +55,6 @@ public class AriaRenderer extends EntityRenderer<AriaEntity> {
     @Override
     public void render(AriaEntity entity, float entityYaw, float partialTick,
                        PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
-        float bob = Mth.sin((entity.tickCount + partialTick) * 0.1F) * 0.05F;
-
         AriaClientEvents.tryStartChat(entity);
 
         AriaFaceState targetFace = entity.getFaceState();
@@ -57,230 +66,130 @@ public class AriaRenderer extends EntityRenderer<AriaEntity> {
         transitionProgress = Math.min(1.0F, transitionProgress + partialTick * FACE_TRANSITION_SPEED);
 
         poseStack.pushPose();
-        poseStack.translate(0.0F, entity.getBbHeight() * 0.5F + bob, 0.0F);
+        poseStack.translate(0.0F, entity.getBbHeight() * 0.5F, 0.0F);
 
-        Matrix4f matrix = poseStack.last().pose();
-        PoseStack.Pose pose = poseStack.last();
+        Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+        Vec3 camPos = camera.getPosition();
+        double dx = camPos.x - entity.getX();
+        double dy = camPos.y - (entity.getY() + entity.getBbHeight() * 0.5);
+        double dz = camPos.z - entity.getZ();
+        float yaw = (float) Math.toDegrees(Math.atan2(dx, dz));
+        float pitch = (float) Math.toDegrees(Math.atan2(-dy, Math.sqrt(dx * dx + dz * dz)));
+        poseStack.mulPose(Axis.YP.rotationDegrees(yaw));
+        poseStack.mulPose(Axis.XP.rotationDegrees(pitch));
 
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
-        buildSphere(consumer, matrix, pose, RADIUS, 255, 230, 0, 255, FULL_BRIGHT);
-
-        // Rotate face to match entity yaw
-        poseStack.mulPose(Axis.YP.rotationDegrees(-entityYaw));
+        drawSphere(poseStack, bufferSource, FULL_BRIGHT);
 
         float faceAlpha = transitionProgress < 1.0F
                 ? (float) Math.sin(transitionProgress * Math.PI) : 1.0F;
-        drawFace(entity, poseStack, bufferSource, FULL_BRIGHT, faceAlpha);
+        drawFace(poseStack, bufferSource, FULL_BRIGHT, faceAlpha);
 
         poseStack.popPose();
 
         super.render(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
     }
 
-    private void drawFace(AriaEntity entity, PoseStack poseStack, MultiBufferSource bufferSource, int light, float alpha) {
-        if (alpha <= 0.01F) return;
-
-        AriaFaceState face = transitionProgress < 1.0F ? previousFace : displayFace;
-        VertexConsumer faceConsumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
-
-        int faceA = (int) (255 * alpha);
-
-        drawEyes(faceConsumer, poseStack, face, light, faceA);
-
-        if (face != AriaFaceState.NO_MOUTH && face != AriaFaceState.STARING) {
-            drawMouth(faceConsumer, poseStack, face, light, faceA);
-        }
-    }
-
-    private void drawEyes(VertexConsumer consumer, PoseStack poseStack, AriaFaceState face, int light, int alpha) {
+    private void drawSphere(PoseStack poseStack, MultiBufferSource bufferSource, int light) {
+        VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(BODY_TEXTURE));
         Matrix4f matrix = poseStack.last().pose();
         PoseStack.Pose pose = poseStack.last();
 
-        float eyeSize = 0.04F;
-        float eyeY = 0.06F;
-        float eyeZ = RADIUS + 0.005F;
+        int latSegments = 16;
+        int lonSegments = 16;
 
-        if (face == AriaFaceState.STARING) {
-            drawSingleEye(consumer, matrix, pose, 0, eyeY, eyeZ, eyeSize * 2.5F, light, alpha);
-            return;
-        }
+        for (int lat = 0; lat < latSegments; lat++) {
+            float theta1 = (float) Math.PI * lat / latSegments;
+            float theta2 = (float) Math.PI * (lat + 1) / latSegments;
 
-        if (face == AriaFaceState.EXCITED) {
-            eyeSize = 0.05F;
-        } else if (face == AriaFaceState.THINKING || face == AriaFaceState.LISTENING) {
-            eyeSize = 0.035F;
-        }
+            for (int lon = 0; lon < lonSegments; lon++) {
+                float phi1 = 2.0f * (float) Math.PI * lon / lonSegments;
+                float phi2 = 2.0f * (float) Math.PI * (lon + 1) / lonSegments;
 
-        float leftEyeX = -0.07F;
-        float rightEyeX = 0.07F;
+                float u1 = (float) lon / lonSegments;
+                float u2 = (float) (lon + 1) / lonSegments;
+                float v1 = (float) lat / latSegments;
+                float v2 = (float) (lat + 1) / latSegments;
 
-        drawEyeQuad(consumer, matrix, pose, leftEyeX, eyeY, eyeZ, eyeSize, light, alpha);
-        drawEyeQuad(consumer, matrix, pose, rightEyeX, eyeY, eyeZ, eyeSize, light, alpha);
+                float[] p1 = sphereVertex(theta1, phi1);
+                float[] p2 = sphereVertex(theta2, phi1);
+                float[] p3 = sphereVertex(theta2, phi2);
+                float[] p4 = sphereVertex(theta1, phi2);
 
-        if (face == AriaFaceState.EXCITED) {
-            float pupilSize = eyeSize * 0.4F;
-            drawEyeQuad(consumer, matrix, pose, leftEyeX, eyeY, eyeZ + 0.002F, pupilSize, light, alpha);
-            drawEyeQuad(consumer, matrix, pose, rightEyeX, eyeY, eyeZ + 0.002F, pupilSize, light, alpha);
-        }
-    }
+                float[] n1 = sphereNormal(theta1, phi1);
+                float[] n2 = sphereNormal(theta2, phi1);
+                float[] n3 = sphereNormal(theta2, phi2);
+                float[] n4 = sphereNormal(theta1, phi2);
 
-    private void drawSingleEye(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
-                               float x, float y, float z, float size, int light, int alpha) {
-        float half = size / 2;
-        emitFaceQuad(consumer, matrix, pose, x - half, y - half, z, x + half, y - half, z,
-                x + half, y + half, z, x - half, y + half, z, light, alpha);
-    }
-
-    private void drawEyeQuad(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
-                             float cx, float cy, float cz, float size, int light, int alpha) {
-        float half = size / 2;
-        emitFaceQuad(consumer, matrix, pose,
-                cx - half, cy - half, cz,
-                cx + half, cy - half, cz,
-                cx + half, cy + half, cz,
-                cx - half, cy + half, cz, light, alpha);
-    }
-
-    private void drawMouth(VertexConsumer consumer, PoseStack poseStack, AriaFaceState face, int light, int alpha) {
-        Matrix4f matrix = poseStack.last().pose();
-        PoseStack.Pose pose = poseStack.last();
-
-        float mouthY = -0.05F;
-        float mouthZ = RADIUS + 0.005F;
-
-        switch (face) {
-            case IDLE -> drawCurvedMouth(consumer, matrix, pose, mouthY, mouthZ, 0.06F, 0.015F, false, light, alpha);
-            case EXCITED -> drawCurvedMouth(consumer, matrix, pose, mouthY, mouthZ, 0.09F, 0.025F, false, light, alpha);
-            case THINKING -> drawFlatMouth(consumer, matrix, pose, mouthY, mouthZ, 0.05F, light, alpha);
-            case LISTENING -> drawCurvedMouth(consumer, matrix, pose, mouthY, mouthZ, 0.04F, 0.01F, false, light, alpha);
-            case UNSETTLING -> drawCurvedMouth(consumer, matrix, pose, mouthY, mouthZ, 0.06F, 0.015F, true, light, alpha);
-            case DISTURBING -> {
-                drawCurvedMouth(consumer, matrix, pose, mouthY, mouthZ, 0.12F, 0.03F, false, light, alpha);
-                drawTeeth(consumer, matrix, pose, mouthY, mouthZ, light, alpha);
+                consumer.addVertex(matrix, p1[0], p1[1], p1[2])
+                        .setColor(255, 255, 255, 255)
+                        .setUv(u1, v1).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
+                        .setNormal(pose, n1[0], n1[1], n1[2]);
+                consumer.addVertex(matrix, p2[0], p2[1], p2[2])
+                        .setColor(255, 255, 255, 255)
+                        .setUv(u1, v2).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
+                        .setNormal(pose, n2[0], n2[1], n2[2]);
+                consumer.addVertex(matrix, p3[0], p3[1], p3[2])
+                        .setColor(255, 255, 255, 255)
+                        .setUv(u2, v2).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
+                        .setNormal(pose, n3[0], n3[1], n3[2]);
+                consumer.addVertex(matrix, p4[0], p4[1], p4[2])
+                        .setColor(255, 255, 255, 255)
+                        .setUv(u2, v1).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
+                        .setNormal(pose, n4[0], n4[1], n4[2]);
             }
         }
     }
 
-    private void drawCurvedMouth(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
-                                 float y, float z, float width, float height, boolean downturn, int light, int alpha) {
-        int segments = 8;
-        float halfWidth = width / 2;
-        for (int i = 0; i < segments; i++) {
-            float t1 = (float) i / segments;
-            float t2 = (float) (i + 1) / segments;
-            float x1 = -halfWidth + t1 * width;
-            float x2 = -halfWidth + t2 * width;
-            float curve1 = (float) Math.sin(t1 * Math.PI) * height;
-            float curve2 = (float) Math.sin(t2 * Math.PI) * height;
-            float yOff1 = downturn ? -curve1 : curve1;
-            float yOff2 = downturn ? -curve2 : curve2;
-            float thickness = 0.008F;
-
-            emitFaceQuad(consumer, matrix, pose,
-                    x1, y - yOff1 - thickness, z,
-                    x2, y - yOff2 - thickness, z,
-                    x2, y - yOff2 + thickness, z,
-                    x1, y - yOff1 + thickness, z, light, alpha);
-        }
-    }
-
-    private void drawFlatMouth(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
-                               float y, float z, float width, int light, int alpha) {
-        float halfWidth = width / 2;
-        float thickness = 0.006F;
-        emitFaceQuad(consumer, matrix, pose,
-                -halfWidth, y - thickness, z,
-                halfWidth, y - thickness, z,
-                halfWidth, y + thickness, z,
-                -halfWidth, y + thickness, z, light, alpha);
-    }
-
-    private void drawTeeth(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
-                           float mouthY, float mouthZ, int light, int alpha) {
-        int teethCount = 6;
-        float mouthWidth = 0.10F;
-        float toothWidth = mouthWidth / teethCount * 0.6F;
-        float toothHeight = 0.012F;
-        float teethY = mouthY + 0.015F;
-
-        for (int i = 0; i < teethCount; i++) {
-            float tx = -mouthWidth / 2 + (i + 0.5F) * (mouthWidth / teethCount);
-            float halfW = toothWidth / 2;
-            emitFaceQuad(consumer, matrix, pose,
-                    tx - halfW, teethY, mouthZ,
-                    tx + halfW, teethY, mouthZ,
-                    tx + halfW, teethY - toothHeight, mouthZ,
-                    tx - halfW, teethY - toothHeight, mouthZ, light, alpha);
-        }
-    }
-
-    private void emitFaceQuad(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
-                              float x1, float y1, float z1,
-                              float x2, float y2, float z2,
-                              float x3, float y3, float z3,
-                              float x4, float y4, float z4, int light, int alpha) {
-        consumer.addVertex(matrix, x1, y1, z1).setColor(FACE_R, FACE_G, FACE_B, alpha)
-                .setUv(0, 0).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
-                .setNormal(pose, 0, 0, 1);
-        consumer.addVertex(matrix, x2, y2, z2).setColor(FACE_R, FACE_G, FACE_B, alpha)
-                .setUv(1, 0).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
-                .setNormal(pose, 0, 0, 1);
-        consumer.addVertex(matrix, x3, y3, z3).setColor(FACE_R, FACE_G, FACE_B, alpha)
-                .setUv(1, 1).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
-                .setNormal(pose, 0, 0, 1);
-        consumer.addVertex(matrix, x4, y4, z4).setColor(FACE_R, FACE_G, FACE_B, alpha)
-                .setUv(0, 1).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
-                .setNormal(pose, 0, 0, 1);
-    }
-
-    private void buildSphere(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
-                             float radius, int r, int g, int b, int a, int light) {
-        for (int lat = 0; lat < LATITUDE_SEGMENTS; lat++) {
-            float theta1 = (float) (Math.PI * lat / LATITUDE_SEGMENTS);
-            float theta2 = (float) (Math.PI * (lat + 1) / LATITUDE_SEGMENTS);
-            float vt = (float) lat / LATITUDE_SEGMENTS;
-            float vb = (float) (lat + 1) / LATITUDE_SEGMENTS;
-
-            for (int lon = 0; lon < LONGITUDE_SEGMENTS; lon++) {
-                float phi1 = (float) (2.0 * Math.PI * lon / LONGITUDE_SEGMENTS);
-                float phi2 = (float) (2.0 * Math.PI * (lon + 1) / LONGITUDE_SEGMENTS);
-                float u1 = (float) lon / LONGITUDE_SEGMENTS;
-                float u2 = (float) (lon + 1) / LONGITUDE_SEGMENTS;
-
-                float[] v1 = sphereVertex(radius, theta1, phi1);
-                float[] v2 = sphereVertex(radius, theta1, phi2);
-                float[] v3 = sphereVertex(radius, theta2, phi2);
-                float[] v4 = sphereVertex(radius, theta2, phi1);
-
-                emitVertex(consumer, matrix, pose, v1, u1, vt, r, g, b, a, light, radius);
-                emitVertex(consumer, matrix, pose, v2, u2, vt, r, g, b, a, light, radius);
-                emitVertex(consumer, matrix, pose, v3, u2, vb, r, g, b, a, light, radius);
-                emitVertex(consumer, matrix, pose, v4, u1, vb, r, g, b, a, light, radius);
-            }
-        }
-    }
-
-    private float[] sphereVertex(float radius, float theta, float phi) {
-        return new float[]{
-                (float) (radius * Math.sin(theta) * Math.cos(phi)),
-                (float) (radius * Math.cos(theta)),
-                (float) (radius * Math.sin(theta) * Math.sin(phi))
+    private float[] sphereVertex(float theta, float phi) {
+        return new float[] {
+            SPHERE_RADIUS * (float) Math.sin(theta) * (float) Math.cos(phi),
+            SPHERE_RADIUS * (float) Math.cos(theta),
+            SPHERE_RADIUS * (float) Math.sin(theta) * (float) Math.sin(phi)
         };
     }
 
-    private void emitVertex(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose,
-                            float[] pos, float u, float v,
-                            int r, int g, int b, int a, int light, float radius) {
-        consumer.addVertex(matrix, pos[0], pos[1], pos[2])
-                .setColor(r, g, b, a)
-                .setUv(u, v)
-                .setOverlay(OverlayTexture.NO_OVERLAY)
-                .setLight(light)
-                .setNormal(pose, pos[0] / radius, pos[1] / radius, pos[2] / radius);
+    private float[] sphereNormal(float theta, float phi) {
+        return new float[] {
+            (float) Math.sin(theta) * (float) Math.cos(phi),
+            (float) Math.cos(theta),
+            (float) Math.sin(theta) * (float) Math.sin(phi)
+        };
+    }
+
+    private void drawFace(PoseStack poseStack, MultiBufferSource bufferSource, int light, float alpha) {
+        if (alpha <= 0.01F) return;
+
+        AriaFaceState face = transitionProgress < 1.0F ? previousFace : displayFace;
+        ResourceLocation faceTex = FACE_TEXTURES.getOrDefault(face, BODY_TEXTURE);
+
+        VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(faceTex));
+        Matrix4f matrix = poseStack.last().pose();
+        PoseStack.Pose pose = poseStack.last();
+
+        float faceHalf = SPHERE_RADIUS * 0.65F;
+        float z = SPHERE_RADIUS * 0.99F;
+        int a = (int) (255 * alpha);
+
+        consumer.addVertex(matrix, -faceHalf, faceHalf, z)
+                .setColor(255, 255, 255, a)
+                .setUv(0, 0).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
+                .setNormal(pose, 0, 0, 1);
+        consumer.addVertex(matrix, -faceHalf, -faceHalf, z)
+                .setColor(255, 255, 255, a)
+                .setUv(0, 1).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
+                .setNormal(pose, 0, 0, 1);
+        consumer.addVertex(matrix, faceHalf, -faceHalf, z)
+                .setColor(255, 255, 255, a)
+                .setUv(1, 1).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
+                .setNormal(pose, 0, 0, 1);
+        consumer.addVertex(matrix, faceHalf, faceHalf, z)
+                .setColor(255, 255, 255, a)
+                .setUv(1, 0).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
+                .setNormal(pose, 0, 0, 1);
     }
 
     @Override
     public ResourceLocation getTextureLocation(AriaEntity entity) {
-        return TEXTURE;
+        return BODY_TEXTURE;
     }
 }

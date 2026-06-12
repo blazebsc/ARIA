@@ -20,8 +20,10 @@ public enum AriaStage {
     public int getEndDay() { return endDay; }
 
     public static AriaStage fromDay(int day) {
-        if (day >= 8) return STAGE_3;
-        if (day >= 4) return STAGE_2;
+        int stage2Start = Config.COMMON.stage1Days.get() + 1;
+        int stage3Start = stage2Start + Config.COMMON.stage2Days.get();
+        if (day >= stage3Start) return STAGE_3;
+        if (day >= stage2Start) return STAGE_2;
         return STAGE_1;
     }
 

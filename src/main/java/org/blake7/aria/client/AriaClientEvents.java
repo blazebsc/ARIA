@@ -1,14 +1,12 @@
 package org.blake7.aria.client;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.color.item.ItemColor;
-import net.minecraft.client.color.item.ItemColors;
-import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
 import org.blake7.aria.Aria;
 import org.blake7.aria.AriaStage;
 import org.blake7.aria.chat.AriaChatManager;
@@ -70,5 +68,12 @@ public class AriaClientEvents {
 
     public static AriaStage getLastStage() {
         return lastStage;
+    }
+
+    @SubscribeEvent
+    public static void onWorldUnload(LevelEvent.Unload event) {
+        if (Minecraft.getInstance().level != null && event.getLevel() == Minecraft.getInstance().level) {
+            chatStarted = false;
+        }
     }
 }
