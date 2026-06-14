@@ -17,6 +17,7 @@ import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.blake7.aria.data.AriaDataComponents;
+import org.blake7.aria.entity.AriaBoxEntity;
 import org.blake7.aria.entity.AriaEntity;
 import org.blake7.aria.item.AriaCoreItem;
 import org.slf4j.Logger;
@@ -35,6 +36,14 @@ public class Aria {
                             .sized(0.6F, 0.6F)
                             .clientTrackingRange(10)
                             .build("aria")
+            );
+
+    public static final DeferredHolder<EntityType<?>, EntityType<AriaBoxEntity>> ARIA_BOX =
+            ENTITIES.register("aria_box", () ->
+                    EntityType.Builder.of(AriaBoxEntity::new, MobCategory.CREATURE)
+                            .sized(0.9F, 0.9F)
+                            .clientTrackingRange(10)
+                            .build("aria_box")
             );
 
     public static final DeferredHolder<Item, AriaCoreItem> ARIA_CORE =
@@ -59,5 +68,6 @@ public class Aria {
 
     public void onEntityAttributeCreation(EntityAttributeCreationEvent event) {
         event.put(ARIA_ENTITY.get(), AriaEntity.createAttributes().build());
+        event.put(ARIA_BOX.get(), AriaBoxEntity.createAttributes().build());
     }
 }

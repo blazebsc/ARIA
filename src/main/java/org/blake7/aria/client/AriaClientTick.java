@@ -33,8 +33,8 @@ public class AriaClientTick {
                 AriaClientEvents.updateStage(entityStage);
             }
 
-            if (aria.isSpeaking() && aria.getFaceState() == AriaFaceState.IDLE) {
-                aria.setFaceState(AriaFaceState.EXCITED);
+            if (aria.isSpeaking() && aria.getFaceState() != AriaFaceState.MOUTH_OPEN) {
+                aria.setFaceState(AriaFaceState.MOUTH_OPEN);
             }
         });
     }

@@ -8,5 +8,8 @@ public enum AriaFaceState {
     UNSETTLING,
     NO_MOUTH,
     STARING,
-    DISTURBING
+    DISTURBING,
+    HURT,
+    MOUTH_OPEN,
+    DISTURBING_MOUTH_OPEN
 }

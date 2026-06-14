@@ -6,6 +6,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import org.blake7.aria.client.model.AriaFaceState;
+import org.blake7.aria.data.AriaDataComponents;
+import org.blake7.aria.entity.AriaBoxEntity;
 import org.blake7.aria.entity.AriaEntity;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
@@ -16,6 +18,29 @@ import java.util.List;
 public class AriaPlayerEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    @SubscribeEvent
+    public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            if (player.level().isClientSide()) return;
+
+            AriaDataComponents.AriaCoreData data = new AriaDataComponents.AriaCoreData(
+                    0, 0, new java.util.ArrayList<>(), player.getName().getString(), AriaFaceState.IDLE.ordinal()
+            );
+
+            AriaBoxEntity box = new AriaBoxEntity(Aria.ARIA_BOX.get(), player.level());
+            box.setAriaData(data);
+            box.setOwnerName(player.getName().getString());
+
+            float yaw = player.getYRot();
+            double offsetX = -Math.sin(Math.toRadians(yaw)) * 3.0;
+            double offsetZ = Math.cos(Math.toRadians(yaw)) * 3.0;
+            box.setPos(player.getX() + offsetX, player.getY(), player.getZ() + offsetZ);
+
+            player.level().addFreshEntity(box);
+            LOGGER.info("Spawned Aria box for player {}", player.getName().getString());
+        }
+    }
 
     @SubscribeEvent
     public static void onPlayerDeath(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {

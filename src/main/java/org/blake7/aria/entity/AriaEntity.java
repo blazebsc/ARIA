@@ -156,11 +156,14 @@ public class AriaEntity extends PathfinderMob {
         horrorEffectTicks++;
         if (horrorEffectTicks >= 200 && random.nextInt(100) == 0) {
             horrorEffectTicks = 0;
-            int effect = random.nextInt(3);
+            int effect = random.nextInt(6);
             switch (effect) {
                 case 0 -> setFaceState(AriaFaceState.STARING);
                 case 1 -> setFaceState(AriaFaceState.DISTURBING);
                 case 2 -> setFaceState(AriaFaceState.UNSETTLING);
+                case 3 -> setFaceState(AriaFaceState.HURT);
+                case 4 -> setFaceState(AriaFaceState.MOUTH_OPEN);
+                case 5 -> setFaceState(AriaFaceState.DISTURBING_MOUTH_OPEN);
             }
         }
     }

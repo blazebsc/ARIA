@@ -96,6 +96,10 @@ public class AriaTtsManager {
     // ── HTTP ─────────────────────────────────────────────────────────────────
 
     private static byte[] synthesizeSpeech(String text) {
+        // Normalize all-caps "ARIA" → "Aria" so TTS says the word
+        // instead of spelling out A-R-I-A
+        text = text.replaceAll("\\bARIA\\b", "Aria");
+
         try {
             JsonObject body = new JsonObject();
             body.addProperty("model",  "tts-1");

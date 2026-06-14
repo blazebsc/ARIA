@@ -2,5 +2,37 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "aria:item/aria_core"
-  }
+  },
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [0, 0, 0],
+      "translation": [0, 0, 0],
+      "scale": [0, 0, 0]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [0, 0, 0],
+      "translation": [0, 0, 0],
+      "scale": [0, 0, 0]
+    },
+    "firstperson_righthand": {
+      "rotation": [0, 0, 0],
+      "translation": [0, 0, 0],
+      "scale": [0, 0, 0]
+    },
+    "firstperson_lefthand": {
+      "rotation": [0, 0, 0],
+      "translation": [0, 0, 0],
+      "scale": [0, 0, 0]
+    }
+  },
+  "overrides": [
+    {"predicate": {"custom_model_data": 0}, "model": "aria:item/aria_core_idle"},
+    {"predicate": {"custom_model_data": 1}, "model": "aria:item/aria_core_excited"},
+    {"predicate": {"custom_model_data": 2}, "model": "aria:item/aria_core_thinking"},
+    {"predicate": {"custom_model_data": 3}, "model": "aria:item/aria_core_listening"},
+    {"predicate": {"custom_model_data": 4}, "model": "aria:item/aria_core_unsettling"},
+    {"predicate": {"custom_model_data": 5}, "model": "aria:item/aria_core_no_mouth"},
+    {"predicate": {"custom_model_data": 6}, "model": "aria:item/aria_core_staring"},
+    {"predicate": {"custom_model_data": 7}, "model": "aria:item/aria_core_disturbing"}
+  ]
 }

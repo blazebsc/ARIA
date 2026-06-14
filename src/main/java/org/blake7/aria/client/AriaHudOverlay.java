@@ -37,6 +37,8 @@ public class AriaHudOverlay {
         HUD_TEXTURES.put(AriaFaceState.DISTURBING, ResourceLocation.fromNamespaceAndPath(Aria.MODID, "textures/gui/disturbing.png"));
     }
 
+    private static final int HUD_SIZE = 64;
+
     @SubscribeEvent
     public static void onRenderGui(RenderGuiEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
@@ -62,18 +64,17 @@ public class AriaHudOverlay {
 
         ResourceLocation tex = HUD_TEXTURES.getOrDefault(face, HUD_TEXTURES.get(AriaFaceState.IDLE));
 
-        GuiGraphics gui = event.getGuiGraphics();
-        int sw = mc.getWindow().getGuiScaledWidth();
-        int sh = mc.getWindow().getGuiScaledHeight();
+        int winW = mc.getWindow().getGuiScaledWidth();
+        int winH = mc.getWindow().getGuiScaledHeight();
 
-        int size = 64;
         int margin = 4;
-        int x = sw - margin - size;
-        int y = sh - margin - size;
+        int x = winW - margin - HUD_SIZE;
+        int y = winH - margin - HUD_SIZE;
 
+        GuiGraphics gui = event.getGuiGraphics();
         RenderSystem.enableBlend();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 0.9F);
-        gui.blit(tex, x, y, 0, 0, size, size, size, size);
+        gui.blit(tex, x, y, 0, 0, HUD_SIZE, HUD_SIZE, HUD_SIZE, HUD_SIZE);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.disableBlend();
     }

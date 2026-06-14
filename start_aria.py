@@ -40,7 +40,7 @@ DEFAULT_WHISPER_PORT = 8181
 DEFAULT_F5_PORT = 8080
 DEFAULT_OLLAMA_MODEL = "hermes3:8b"
 DEFAULT_WHISPER_MODEL = "base"
-F5_MIN_VRAM_MIB = 3500
+F5_MIN_VRAM_MIB = 1500
 
 REQUIRED_IMPORTS = (
     "fastapi",
@@ -191,6 +191,17 @@ def install_python_deps(python: Path) -> None:
             "pydantic>=2",
         ]
     )
+    run_checked(
+        [
+            str(python),
+            "-m",
+            "pip",
+            "install",
+            "--force-reinstall",
+            "--no-deps",
+            "tqdm>=4.60",
+        ]
+    )
 
 
 def ensure_python(setup: bool) -> Path:
@@ -301,14 +312,18 @@ def stop_started_processes() -> None:
     deadline = time.monotonic() + 10.0
     for entry in reversed(started):
         remaining = max(0.1, deadline - time.monotonic())
-        with contextlib.suppress(subprocess.TimeoutExpired):
+        try:
             entry.process.wait(timeout=remaining)
+        except (subprocess.TimeoutExpired, KeyboardInterrupt):
+            pass
 
     for entry in reversed(started):
         if entry.process.poll() is None:
             terminate_process(entry, signal.SIGKILL)
-            with contextlib.suppress(subprocess.TimeoutExpired):
+            try:
                 entry.process.wait(timeout=2.0)
+            except (subprocess.TimeoutExpired, KeyboardInterrupt):
+                pass
         with contextlib.suppress(Exception):
             entry.log_file.close()
 
@@ -381,7 +396,7 @@ def transcribe_reference_audio(ref_audio: Path, whisper_port: int, whisper_model
         fail(f"Whisper returned an empty transcript for {ref_audio}. Pass --ref-text manually.")
 
     preview = text if len(text) <= 100 else text[:97] + "..."
-    status(f"reference transcript: {preview}")
+    status(f"transcribed: {text}")
     return text
 
 
@@ -539,10 +554,17 @@ def ensure_f5_tts(
 
 def wait_for_services() -> None:
     status("services are running. Press Ctrl+C to stop.")
+    last_gpu_print = 0.0
     while True:
         for entry in started:
             if entry.process.poll() is not None:
                 fail(f"{entry.name} exited unexpectedly. See {entry.log_path}")
+        now = time.monotonic()
+        if now - last_gpu_print >= 1.0:
+            free = gpu_free_mib()
+            if free is not None:
+                print(f"\r[aria] GPU memory free: {free} MiB", end="", flush=True)
+            last_gpu_print = now
         time.sleep(1.0)
 
 
@@ -568,8 +590,25 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def interactive_setup(args: argparse.Namespace) -> None:
+    if sys.stdin.isatty():
+        print("\n[aria] Voice setup", flush=True)
+        wav_path = input(f"  WAV file path [{args.ref_audio}]: ").strip()
+        if wav_path:
+            args.ref_audio = wav_path
+
+        transcript = input("  Transcript (or press Enter to auto-transcribe): ").strip()
+        if transcript:
+            args.ref_text = transcript
+        else:
+            args.ref_text = ""
+        print(flush=True)
+
+
 def main() -> int:
     args = parse_args()
+    interactive_setup(args)
+
     ref_audio = Path(args.ref_audio)
     if not ref_audio.is_absolute():
         ref_audio = ROOT / ref_audio
@@ -590,10 +629,13 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    interrupted = False
     try:
         raise SystemExit(main())
     except KeyboardInterrupt:
+        interrupted = True
         status("interrupted")
-        raise SystemExit(130)
     finally:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
         stop_started_processes()
+    raise SystemExit(130 if interrupted else 0)

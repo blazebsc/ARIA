@@ -37,6 +37,9 @@ public class AriaRenderer extends EntityRenderer<AriaEntity> {
         FACE_TEXTURES.put(AriaFaceState.NO_MOUTH, ResourceLocation.fromNamespaceAndPath(Aria.MODID, "textures/entity/aria_no_mouth.png"));
         FACE_TEXTURES.put(AriaFaceState.STARING, ResourceLocation.fromNamespaceAndPath(Aria.MODID, "textures/entity/aria_staring.png"));
         FACE_TEXTURES.put(AriaFaceState.DISTURBING, ResourceLocation.fromNamespaceAndPath(Aria.MODID, "textures/entity/aria_disturbing.png"));
+        FACE_TEXTURES.put(AriaFaceState.HURT, ResourceLocation.fromNamespaceAndPath(Aria.MODID, "textures/entity/aria_hurt.png"));
+        FACE_TEXTURES.put(AriaFaceState.MOUTH_OPEN, ResourceLocation.fromNamespaceAndPath(Aria.MODID, "textures/entity/aria_mouthopen.png"));
+        FACE_TEXTURES.put(AriaFaceState.DISTURBING_MOUTH_OPEN, ResourceLocation.fromNamespaceAndPath(Aria.MODID, "textures/entity/aria_disturbingmouthopen.png"));
     }
 
     private static final float SPHERE_RADIUS = 0.3F;

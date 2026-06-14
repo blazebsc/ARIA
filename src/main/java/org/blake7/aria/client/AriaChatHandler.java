@@ -29,9 +29,10 @@ public class AriaChatHandler {
 
         AriaEntity aria = findNearestAria(mc);
         if (aria != null) {
-            AriaClientEvents.tryStartChat(aria, AriaChatHandler::sendAriaChat, () -> aria.setFaceState(org.blake7.aria.client.model.AriaFaceState.THINKING));
+            AriaClientEvents.tryStartChat(aria, AriaChatHandler::sendAriaChat, AriaChatHandler::sendPlayerChat, () -> aria.setFaceState(org.blake7.aria.client.model.AriaFaceState.THINKING));
             var chatManager = AriaClientEvents.getChatManager();
             chatManager.setChatCallback(AriaChatHandler::sendAriaChat);
+            chatManager.setPlayerChatCallback(AriaChatHandler::sendPlayerChat);
             if (!chatManager.isRunning()) return;
             chatManager.processTextMessage(message, AriaChatHandler::sendAriaChat);
             return;
@@ -68,9 +69,15 @@ public class AriaChatHandler {
         return null;
     }
 
-    private static void sendAriaChat(String message) {
+    static void sendAriaChat(String message) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
         mc.player.sendSystemMessage(Component.literal("Aria: " + message));
+    }
+
+    static void sendPlayerChat(String message) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        mc.player.sendSystemMessage(Component.literal("You: " + message));
     }
 }
